@@ -16,6 +16,7 @@ from src.config import TOP_N, CACHE_TTL, DEFAULT_STOPLOSS, DISCLAIMER
 st.set_page_config(page_title="Stock Dashboard", page_icon="📈", layout="wide",
                    initial_sidebar_state="expanded")
 apply_theme()
+auth.handle_callback()  # 구글 리다이렉트 복귀(?code) 처리
 
 # ---------- 사이드바: 계정 ----------
 with st.sidebar:

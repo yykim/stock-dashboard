@@ -1,19 +1,21 @@
 """
-로그인 (streamlit-oauth 컴포넌트, Google OAuth).
+로그인 (Google OAuth — 같은 탭 리다이렉트 방식).
 
-* Streamlit Community Cloud에서 st.login(네이티브)이 콜백 쿠키 문제로
-  "Missing provider for OAuth callback" 에러가 나서 컴포넌트 방식으로 전환.
-* redirect_uri는 기존 [auth].redirect_uri 재사용(구글에 이미 등록됨) → 구글 설정 변경 불필요.
-* 로그인 정보는 st.session_state['user_info']에 저장(세션 단위).
+* 팝업 방식(streamlit-oauth)·네이티브(st.login) 모두 Streamlit Cloud에서 콜백 처리가 깨져서,
+  가장 확실한 "같은 탭 리다이렉트 + 서버측 토큰 교환" 방식으로 구현.
+* 흐름: 버튼(앵커) 클릭 → 구글 동의 화면으로 전체 이동 → 앱 URL로 ?code 와 함께 복귀
+  → handle_callback()이 code를 토큰으로 교환 → id_token에서 사용자 정보 → session_state 저장.
+* redirect_uri는 [auth].redirect_uri (앱 루트 URL) 사용.
 """
 import base64
 import json
+import urllib.parse
 
+import requests
 import streamlit as st
 
 AUTHORIZE_URL = "https://accounts.google.com/o/oauth2/v2/auth"
 TOKEN_URL = "https://oauth2.googleapis.com/token"
-REVOKE_URL = "https://oauth2.googleapis.com/revoke"
 
 
 def auth_configured() -> bool:
@@ -24,18 +26,7 @@ def auth_configured() -> bool:
         return False
 
 
-@st.cache_resource(show_spinner=False)
-def _oauth():
-    from streamlit_oauth import OAuth2Component
-    a = st.secrets["auth"]
-    return OAuth2Component(
-        a["client_id"], a["client_secret"],
-        AUTHORIZE_URL, TOKEN_URL, TOKEN_URL, REVOKE_URL,
-    )
-
-
 def _decode_id_token(token: dict) -> dict:
-    """id_token(JWT) payload를 디코딩해 사용자 정보(email·name·picture·sub)를 얻는다."""
     idt = token.get("id_token", "")
     parts = idt.split(".")
     if len(parts) < 2:
@@ -47,24 +38,55 @@ def _decode_id_token(token: dict) -> dict:
         return {}
 
 
+def _authorize_url() -> str:
+    a = st.secrets["auth"]
+    params = {
+        "client_id": a["client_id"],
+        "redirect_uri": a["redirect_uri"],
+        "response_type": "code",
+        "scope": "openid email profile",
+        "access_type": "online",
+        "prompt": "select_account",
+    }
+    return AUTHORIZE_URL + "?" + urllib.parse.urlencode(params)
+
+
+def handle_callback():
+    """앱 시작 시 호출: URL에 ?code 가 있으면 토큰 교환 후 로그인 처리."""
+    if st.session_state.get("user_info"):
+        return
+    code = st.query_params.get("code")
+    if not code or not auth_configured():
+        return
+    a = st.secrets["auth"]
+    try:
+        resp = requests.post(TOKEN_URL, data={
+            "code": code,
+            "client_id": a["client_id"],
+            "client_secret": a["client_secret"],
+            "redirect_uri": a["redirect_uri"],
+            "grant_type": "authorization_code",
+        }, timeout=10)
+        info = _decode_id_token(resp.json())
+        if info:
+            st.session_state["user_info"] = info
+    except Exception as e:
+        st.error(f"로그인 처리 실패: {e}")
+    st.query_params.clear()  # URL에서 ?code 제거
+
+
 def login_button(label="Google로 로그인", key="login"):
-    """Google 로그인 버튼(컴포넌트). 성공 시 session_state에 사용자 정보 저장."""
+    """Google 로그인 버튼(같은 탭 이동 앵커)."""
     if not auth_configured():
         st.caption("로그인 기능 준비중 (관리자 키 설정 필요)")
         return
-    a = st.secrets["auth"]
-    result = _oauth().authorize_button(
-        name=label,
-        redirect_uri=a["redirect_uri"],
-        scope="openid email profile",
-        key=key,
-        use_container_width=True,
-        pkce="S256",
-        extras_params={"prompt": "select_account"},
+    st.markdown(
+        f'<a href="{_authorize_url()}" target="_self" '
+        f'style="display:block;text-align:center;background:#ffffff;color:#1f2937;'
+        f'padding:10px 14px;border-radius:8px;font-weight:600;text-decoration:none;'
+        f'border:1px solid #d1d5db;">{label}</a>',
+        unsafe_allow_html=True,
     )
-    if result and "token" in result:
-        st.session_state["user_info"] = _decode_id_token(result["token"])
-        st.rerun()
 
 
 def is_logged_in() -> bool:
