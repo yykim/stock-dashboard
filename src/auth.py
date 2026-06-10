@@ -45,7 +45,6 @@ def _authorize_url() -> str:
         "redirect_uri": a["redirect_uri"],
         "response_type": "code",
         "scope": "openid email profile",
-        "access_type": "online",
         "prompt": "select_account",
     }
     return AUTHORIZE_URL + "?" + urllib.parse.urlencode(params)
@@ -76,15 +75,20 @@ def handle_callback():
 
 
 def login_button(label="Google로 로그인", key="login"):
-    """Google 로그인 버튼(같은 탭 이동 앵커)."""
+    """Google 로그인 버튼.
+
+    target="_top" 앵커로 렌더 → 클릭 시 앱이 iframe에 감싸여 있든 아니든 항상
+    '진짜 최상위 창'이 구글로 이동(같은 탭). 기존 target="_self"는 Cloud가 앱을
+    iframe으로 감쌀 때 iframe 안만 이동해 구글이 403을 주던 문제가 있었음.
+    """
     if not auth_configured():
         st.caption("로그인 기능 준비중 (관리자 키 설정 필요)")
         return
     st.markdown(
-        f'<a href="{_authorize_url()}" target="_self" '
-        f'style="display:block;text-align:center;background:#ffffff;color:#1f2937;'
-        f'padding:10px 14px;border-radius:8px;font-weight:600;text-decoration:none;'
-        f'border:1px solid #d1d5db;">{label}</a>',
+        f'<a href="{_authorize_url()}" target="_top" '
+        f'style="display:flex;align-items:center;justify-content:center;height:40px;'
+        f'background:#ffffff;color:#1f2937;border-radius:8px;font-weight:600;'
+        f'text-decoration:none;border:1px solid #d1d5db;font-size:14px;">{label}</a>',
         unsafe_allow_html=True,
     )
 
