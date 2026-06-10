@@ -29,7 +29,7 @@ with st.sidebar:
         st.button("로그아웃", on_click=st.logout, width="stretch")
     elif auth.auth_configured():
         st.button("Google로 로그인", type="primary", on_click=st.login,
-                  args=["google"], width="stretch")
+                  width="stretch")
     else:
         st.caption("로그인 기능 준비중 (관리자 키 설정 필요)")
 
@@ -188,7 +188,7 @@ with tab2:
         st.info("⭐ 로그인하면 관심종목을 저장하고 손절 알림을 받을 수 있어요.")
         if auth.auth_configured():
             st.button("Google로 로그인하고 시작하기", type="primary",
-                      on_click=st.login, args=["google"])
+                      on_click=st.login)
     elif not store.configured():
         st.warning("관심종목 저장소(DB)가 아직 설정되지 않았어요. (관리자 Supabase 키 필요)")
     else:
