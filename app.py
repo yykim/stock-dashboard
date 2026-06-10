@@ -1,7 +1,6 @@
 """
 지수 대비 강세·약세 종목 대시보드 (v2 — 공개 서비스)
-- 데이터: pykrx (KRX 일별 종가)
-- Phase 1: 시장 강세/약세 + 지수.  (로그인·개인화는 다음 Phase)
+- 데이터: 정적 종목목록(CSV) + yfinance(시세·지수). 로그인=streamlit-oauth, 개인화=Supabase.
 """
 import pandas as pd
 import streamlit as st
@@ -32,12 +31,12 @@ with st.sidebar:
 
 
 # ---------- 데이터 (일별 → 30분 캐시) ----------
-@st.cache_data(ttl=CACHE_TTL, show_spinner="KRX 데이터 불러오는 중...")
+@st.cache_data(ttl=CACHE_TTL, show_spinner="시세 불러오는 중...")
 def get_listing():
     return ds.load_listing()
 
 
-@st.cache_data(ttl=CACHE_TTL, show_spinner="KRX 데이터 불러오는 중...")
+@st.cache_data(ttl=CACHE_TTL, show_spinner="시세 불러오는 중...")
 def load(market: str):
     df = ds.get_market(get_listing(), market, TOP_N)
     idx = ds.get_index(market)
@@ -159,7 +158,7 @@ kosdaq_df, kosdaq_idx = load("KOSDAQ")
 
 day = kospi_idx.get("날짜", "")
 if day:
-    st.caption(f"데이터 기준일 {day[:4]}-{day[4:6]}-{day[6:]} · KRX 종가 기준(일별)")
+    st.caption(f"데이터 기준일 {day[:4]}-{day[4:6]}-{day[6:]} · Yahoo Finance 일별 종가 기준")
 
 c1, c2 = st.columns(2)
 index_card(c1, "코스피 지수", kospi_idx["지수"], kospi_idx["등락률"])
