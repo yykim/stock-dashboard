@@ -1,6 +1,6 @@
 """
 지수 대비 강세·약세 종목 대시보드 (v2 — 공개 서비스)
-- 데이터: 정적 종목목록(CSV) + yfinance(시세·지수). 로그인=streamlit-oauth, 개인화=Supabase.
+- 데이터: 정적 종목목록(CSV) + yfinance(시세·지수). 로그인=구글 OAuth(서명 쿠키), 개인화=Supabase.
 """
 import pandas as pd
 import streamlit as st
@@ -16,7 +16,8 @@ from src.config import TOP_N, CACHE_TTL, DEFAULT_STOPLOSS, DISCLAIMER
 st.set_page_config(page_title="Stock Dashboard", page_icon="📈", layout="wide",
                    initial_sidebar_state="expanded")
 apply_theme()
-auth.handle_callback()  # 구글 리다이렉트 복귀(?code) 처리
+auth.restore_session()  # 쿠키에 로그인 정보 있으면 복원 (모든 탭·새로고침 공통)
+auth.handle_callback()  # (새 탭) 구글 리다이렉트 복귀(?code) → 쿠키 저장 후 자동 닫힘
 
 # ---------- 사이드바: 계정 ----------
 with st.sidebar:
@@ -26,7 +27,9 @@ with st.sidebar:
         if pic:
             st.image(pic, width=72)
         st.success(f"{auth.user_name()}님")
-        st.button("로그아웃", on_click=auth.logout, width="stretch")
+        if st.button("로그아웃", width="stretch"):
+            auth.logout()
+            st.rerun()
     else:
         auth.login_button(label="Google로 로그인", key="sidebar_login")
 
