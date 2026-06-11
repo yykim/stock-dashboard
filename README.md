@@ -3,6 +3,9 @@
 코스피·코스닥 종목을 지수와 비교해 **시장보다 강한/약한 종목**을 보여주는 공개 웹 서비스.
 로그인하면 관심종목을 저장하고 개인화된 알림을 받을 수 있도록 단계적으로 확장합니다.
 
+**🔗 라이브 데모 → https://stock-dashboard-rp4n.onrender.com**
+<sub>무료 호스팅(Render)이라 한동안 미사용 시 첫 접속에 ~50초 로딩될 수 있어요.</sub>
+
 > v1([naver-stock-dashboard](../portfolio/naver-stock-dashboard))과 별개 프로젝트입니다.
 > v1은 네이버 크롤링·로컬용, **v2는 KRX 공식 데이터·로그인·개인화·무료 배포형**입니다.
 
@@ -19,7 +22,7 @@
 - ✅ Phase 1: KRX 일별 데이터 + 강세/약세 대시보드 (다크 테마)
 - ✅ Phase 2: Google 로그인 (Streamlit OIDC)
 - ✅ Phase 3: 관심종목 개인화 (Supabase) + 장중 지연시세 (yfinance)
-- 🚧 Phase 4: 무료 배포 (Streamlit Community Cloud)
+- ✅ Phase 4: 무료 배포 (**Render**) — https://stock-dashboard-rp4n.onrender.com
 
 ## 기술
 - 데이터: **FinanceDataReader**(KRX 일별), **yfinance**(관심종목 장중 지연시세)
