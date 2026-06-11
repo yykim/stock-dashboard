@@ -157,9 +157,15 @@ st.markdown("## 📈 지수 대비 강세·약세 종목")
 kospi_df, kospi_idx = load("KOSPI")
 kosdaq_df, kosdaq_idx = load("KOSDAQ")
 
-day = kospi_idx.get("날짜", "")
-if day:
-    st.caption(f"데이터 기준일 {day[:4]}-{day[4:6]}-{day[6:]} · Yahoo Finance 일별 종가 기준")
+_t = kospi_idx.get("시각", "")
+if _t:
+    _parts = [f"📊 {_t} (KST) 시세 기준"]
+    if kospi_idx.get("상태"):
+        _parts.append(kospi_idx["상태"])
+    if kospi_idx.get("source") == "snapshot":
+        _parts.append("저장본(스냅샷)")
+    _parts.append("Yahoo Finance")
+    st.caption(" · ".join(_parts))
 
 c1, c2 = st.columns(2)
 index_card(c1, "코스피 지수", kospi_idx["지수"], kospi_idx["등락률"])

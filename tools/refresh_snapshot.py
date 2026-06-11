@@ -38,7 +38,12 @@ if not rows:
 
 pd.DataFrame(rows).to_csv(ds.SNAP_PRICES, index=False)
 
-idx = {m: ds._live_index(m) for m in ["KOSPI", "KOSDAQ"]}
+meta = ds.market_meta()   # 데이터 실제 시각·장상태 (스냅샷에 함께 저장 → 폴백 시 정확)
+idx = {}
+for m in ["KOSPI", "KOSDAQ"]:
+    base = ds._live_index(m)
+    base.update(meta)
+    idx[m] = base
 ds.SNAP_INDEX.write_text(json.dumps(idx, ensure_ascii=False, indent=2), encoding="utf-8")
 
 print(f"\n✅ 저장: {ds.SNAP_PRICES.name} ({len(rows)}종목), {ds.SNAP_INDEX.name}")

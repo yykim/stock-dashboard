@@ -9,10 +9,19 @@
   스냅샷 갱신: `python tools/refresh_snapshot.py` 실행 후 commit/push.
 """
 import json
+from datetime import datetime, timedelta
 from pathlib import Path
 
 import pandas as pd
 import yfinance as yf
+
+# 장 상태(yfinance marketState) → 한글 표기
+_STATE_KR = {
+    "REGULAR": "장중 (약 15~20분 지연)",
+    "CLOSED": "장마감 종가",
+    "PRE": "장 시작 전", "PREPRE": "장 시작 전",
+    "POST": "장 마감 후", "POSTPOST": "장 마감 후",
+}
 
 DATA = Path(__file__).resolve().parent.parent / "data"
 LISTING_CSV = DATA / "listing.csv"
@@ -112,10 +121,36 @@ def _live_index(market: str) -> dict:
         return {"지수": 0.0, "등락률": 0.0, "날짜": ""}
 
 
+def market_meta() -> dict:
+    """데이터의 '실제 시각'과 장 상태 (yfinance regularMarketTime / marketState).
+
+    KRX 지수(^KS11) 기준 — 코스피·코스닥 공통. 야후가 주는 마지막 갱신 시각이라
+    장중이면 ~15~20분 지연 시각, 마감 후면 종가 시각을 반환한다. 실패 시 빈 dict.
+    """
+    try:
+        info = yf.Ticker("^KS11").get_info()
+        ep = info.get("regularMarketTime")
+        if ep:
+            kst = datetime.utcfromtimestamp(int(ep)) + timedelta(hours=9)  # UTC+9
+            return {"시각": kst.strftime("%Y-%m-%d %H:%M"),
+                    "상태": _STATE_KR.get(info.get("marketState", ""), "")}
+    except Exception:
+        pass
+    return {}
+
+
 def get_index(market: str) -> dict:
-    """코스피/코스닥 지수. 라이브 우선, 실패 시 스냅샷 폴백."""
+    """코스피/코스닥 지수 + 데이터 실제 시각. 라이브 우선, 실패 시 스냅샷 폴백."""
+    key = "KOSDAQ" if str(market).startswith("KOSDAQ") else "KOSPI"
     res = _live_index(market)
     if res.get("지수", 0) > 0:
+        meta = market_meta()  # 실제 데이터 시각(라이브)
+        d = res.get("날짜", "")
+        res["시각"] = meta.get("시각") or (f"{d[:4]}-{d[4:6]}-{d[6:]}" if len(d) == 8 else d)
+        res["상태"] = meta.get("상태", "")
+        res["source"] = "live"
         return res
-    key = "KOSDAQ" if str(market).startswith("KOSDAQ") else "KOSPI"
-    return _snapshot_index().get(key, res)
+    snap = _snapshot_index().get(key)   # 폴백: 스냅샷에 저장된 '실제 데이터 시각' 사용
+    if snap:
+        return {**snap, "source": "snapshot"}
+    return {**res, "시각": "", "상태": "", "source": "live"}
