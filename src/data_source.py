@@ -9,19 +9,10 @@
   스냅샷 갱신: `python tools/refresh_snapshot.py` 실행 후 commit/push.
 """
 import json
-from datetime import datetime, timedelta
 from pathlib import Path
 
 import pandas as pd
 import yfinance as yf
-
-# 장 상태(yfinance marketState) → 한글 표기
-_STATE_KR = {
-    "REGULAR": "장중 (약 15~20분 지연)",
-    "CLOSED": "장마감 종가",
-    "PRE": "장 시작 전", "PREPRE": "장 시작 전",
-    "POST": "장 마감 후", "POSTPOST": "장 마감 후",
-}
 
 DATA = Path(__file__).resolve().parent.parent / "data"
 LISTING_CSV = DATA / "listing.csv"
@@ -122,18 +113,21 @@ def _live_index(market: str) -> dict:
 
 
 def market_meta() -> dict:
-    """데이터의 '실제 시각'과 장 상태 (yfinance regularMarketTime / marketState).
+    """데이터의 '실제 시각'과 장 상태.
 
-    KRX 지수(^KS11) 기준 — 코스피·코스닥 공통. 야후가 주는 마지막 갱신 시각이라
-    장중이면 ~15~20분 지연 시각, 마감 후면 종가 시각을 반환한다. 실패 시 빈 dict.
+    KRX 지수(^KS11) 분봉의 마지막 봉 시각(야후, ~15~20분 지연)을 사용 — 코스피·코스닥 공통.
+    batch download 계열이라 클라우드(Render)에서도 동작한다(get_info는 클라우드 IP에서
+    rate-limit으로 자주 실패해 안 씀). 실패 시 빈 dict.
     """
     try:
-        info = yf.Ticker("^KS11").get_info()
-        ep = info.get("regularMarketTime")
-        if ep:
-            kst = datetime.utcfromtimestamp(int(ep)) + timedelta(hours=9)  # UTC+9
+        h = yf.download("^KS11", period="5d", interval="5m",
+                        progress=False, auto_adjust=False)
+        if len(h):
+            ts = h.index[-1]   # tz-aware(Asia/Seoul)
+            kst = ts.tz_convert("Asia/Seoul") if ts.tzinfo else (ts + pd.Timedelta(hours=9))
+            after_close = (kst.hour * 60 + kst.minute) >= 15 * 60 + 25  # 15:25 이후 = 마감
             return {"시각": kst.strftime("%Y-%m-%d %H:%M"),
-                    "상태": _STATE_KR.get(info.get("marketState", ""), "")}
+                    "상태": "장마감 종가" if after_close else "장중 (약 15~20분 지연)"}
     except Exception:
         pass
     return {}
