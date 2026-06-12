@@ -30,13 +30,6 @@ with st.sidebar:
     else:
         auth.login_button(label="Google로 로그인", key="sidebar_login")
 
-    st.divider()
-    # 데이터 갱신: 캐시만 비우고 다시 불러옴 (페이지 전체 새로고침보다 빠름)
-    if st.button("🔄 데이터 갱신", width="stretch",
-                 help="최신 시세를 다시 불러와요 (몇 초 걸려요)"):
-        st.cache_data.clear()
-        st.rerun()
-
 
 # ---------- 데이터 (일별 → 30분 캐시) ----------
 @st.cache_data(ttl=CACHE_TTL, show_spinner="시세 불러오는 중...")
@@ -159,7 +152,12 @@ def index_card(col, label, value, rate):
 
 
 # ---------- 헤더 ----------
-st.markdown("## 📈 지수 대비 강세·약세 종목")
+_title, _refresh = st.columns([1, 1], vertical_alignment="center")
+_title.markdown("## 📈 지수 대비 강세·약세 종목")
+# 제목 옆 새로고침 아이콘: 캐시 비우고 최신 시세 다시 불러옴
+if _refresh.button("🔄", help="데이터 갱신 — 최신 시세 다시 불러오기", key="refresh"):
+    st.cache_data.clear()
+    st.rerun()
 
 kospi_df, kospi_idx = load("KOSPI")
 kosdaq_df, kosdaq_idx = load("KOSDAQ")
