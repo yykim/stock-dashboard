@@ -30,6 +30,13 @@ with st.sidebar:
     else:
         auth.login_button(label="Google로 로그인", key="sidebar_login")
 
+    st.divider()
+    # 데이터 갱신: 캐시만 비우고 다시 불러옴 (페이지 전체 새로고침보다 빠름)
+    if st.button("🔄 데이터 갱신", width="stretch",
+                 help="최신 시세를 다시 불러와요 (몇 초 걸려요)"):
+        st.cache_data.clear()
+        st.rerun()
+
 
 # ---------- 데이터 (일별 → 30분 캐시) ----------
 @st.cache_data(ttl=CACHE_TTL, show_spinner="시세 불러오는 중...")

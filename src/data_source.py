@@ -38,7 +38,7 @@ def _yf_changes(codes, market: str) -> dict:
         return {}
     try:
         data = yf.download(tickers, period="7d", interval="1d", group_by="ticker",
-                           auto_adjust=False, progress=False, threads=True)
+                           auto_adjust=False, progress=False, threads=True, timeout=12)
     except Exception:
         return {}
     out = {}
@@ -98,7 +98,8 @@ def _live_index(market: str) -> dict:
     """yfinance 라이브 지수값·등락률 (일별 종가)."""
     sym = INDEX_SYMBOL["KOSDAQ" if str(market).startswith("KOSDAQ") else "KOSPI"]
     try:
-        data = yf.download(sym, period="7d", interval="1d", progress=False, auto_adjust=False)
+        data = yf.download(sym, period="7d", interval="1d", progress=False,
+                           auto_adjust=False, timeout=10)
         closes = data["Close"]
         if isinstance(closes, pd.DataFrame):
             closes = closes.iloc[:, 0]
@@ -121,7 +122,7 @@ def market_meta() -> dict:
     """
     try:
         h = yf.download("^KS11", period="5d", interval="5m",
-                        progress=False, auto_adjust=False)
+                        progress=False, auto_adjust=False, timeout=10)
         if len(h):
             ts = h.index[-1]   # tz-aware(Asia/Seoul)
             kst = ts.tz_convert("Asia/Seoul") if ts.tzinfo else (ts + pd.Timedelta(hours=9))
