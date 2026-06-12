@@ -81,6 +81,9 @@ for sosok, m in [("01", "KOSPI"), ("02", "KOSDAQ")]:
     except Exception as e:
         print(f"  ⚠️ {m} 수급 크롤 실패: {repr(e)[:80]}")
 if supply.get("KOSPI") or supply.get("KOSDAQ"):
+    # 수급 집계 시각·장상태 (가격과 동일 run의 market_meta 재사용 → 캡션 일관)
+    supply["시각"] = meta.get("시각") or supply.get("기준일", "")
+    supply["상태"] = meta.get("상태", "")
     ds.SNAP_SUPPLY.write_text(json.dumps(supply, ensure_ascii=False, indent=2), encoding="utf-8")
 
 print(f"\n✅ 저장: {ds.SNAP_PRICES.name} ({len(rows)}종목), {ds.SNAP_INDEX.name}, {ds.SNAP_SUPPLY.name}")

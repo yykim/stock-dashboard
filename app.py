@@ -214,8 +214,12 @@ index_card(c2, "코스닥 지수", kosdaq_idx["지수"], kosdaq_idx["등락률"]
 _sup = ds.get_supply()
 if _sup.get("KOSPI") or _sup.get("KOSDAQ"):
     st.write("")
-    st.caption(f"🏦 투자자별 순매수 · {_sup.get('기준일', '')} 장마감 기준 · "
-               "🔴 순매수 / 🔵 순매도 (억원)")
+    _stime = _sup.get("시각") or _sup.get("기준일", "")
+    _scap = f"🏦 투자자별 순매수 · {_stime} (KST) 기준"
+    if _sup.get("상태"):
+        _scap += f" · {_sup['상태']}"
+    _scap += " · 🔴 순매수 / 🔵 순매도 (억원)"
+    st.caption(_scap)
     s1, s2 = st.columns(2)
     supply_card(s1, "코스피", _sup.get("KOSPI", {}))
     supply_card(s2, "코스닥", _sup.get("KOSDAQ", {}))
