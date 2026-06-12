@@ -18,6 +18,7 @@ DATA = Path(__file__).resolve().parent.parent / "data"
 LISTING_CSV = DATA / "listing.csv"
 SNAP_PRICES = DATA / "snapshot_prices.csv"
 SNAP_INDEX = DATA / "snapshot_index.json"
+SNAP_SUPPLY = DATA / "snapshot_supply.json"
 INDEX_SYMBOL = {"KOSPI": "^KS11", "KOSDAQ": "^KQ11"}
 
 
@@ -149,3 +150,16 @@ def get_index(market: str) -> dict:
     if snap:
         return {**snap, "source": "snapshot"}
     return {**res, "시각": "", "상태": "", "source": "live"}
+
+
+def get_supply() -> dict:
+    """투자자별 수급 스냅샷 (장마감 기준, 단위: 억원, 순매수).
+
+    {'기준일': 'YYYY-MM-DD', 'KOSPI': {외국인,기관,개인}, 'KOSDAQ': {...}}
+    KRX(클라우드 차단)·pykrx(로그인 필요) 대신, 로컬에서 Naver를 크롤해 만든 스냅샷을 읽는다.
+    (클라우드는 직접 크롤하지 않고 커밋된 스냅샷만 표시 — `tools/refresh_snapshot.py`로 갱신.)
+    """
+    try:
+        return json.loads(SNAP_SUPPLY.read_text(encoding="utf-8"))
+    except Exception:
+        return {}

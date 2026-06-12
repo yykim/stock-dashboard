@@ -151,6 +151,28 @@ def index_card(col, label, value, rate):
     )
 
 
+def supply_card(col, label, sup):
+    """투자자별 수급 카드 — 순매수=빨강 / 순매도=파랑 (단위 억원, 한국식 색)."""
+    rows = ""
+    for inv in ["외국인", "기관", "개인"]:
+        v = sup.get(inv)
+        if v is None:
+            continue
+        color = _RED if v > 0 else (_BLUE if v < 0 else "#94A3B8")
+        sign = "+" if v > 0 else ""
+        rows += (
+            '<div style="display:flex;justify-content:space-between;padding:5px 0;font-size:0.95rem;">'
+            f'<span style="color:#94A3B8;">{inv}</span>'
+            f'<span style="color:{color};font-weight:700;font-variant-numeric:tabular-nums;">'
+            f'{sign}{v:,}억</span></div>'
+        )
+    col.markdown(
+        '<div style="background:#1E293B;border:1px solid #334155;border-radius:16px;padding:14px 20px;">'
+        f'<div style="color:#F1F5F9;font-weight:600;margin-bottom:6px;">{label}</div>{rows}</div>',
+        unsafe_allow_html=True,
+    )
+
+
 # ---------- 헤더 ----------
 # 제목 자체가 새로고침 버튼: 테두리 없는(tertiary) 버튼을 제목처럼 스타일링.
 # 작은 ↻ 표시 + 호버 색변화 + 툴팁으로 '클릭 가능'을 살짝 알림.
@@ -187,6 +209,17 @@ if _t:
 c1, c2 = st.columns(2)
 index_card(c1, "코스피 지수", kospi_idx["지수"], kospi_idx["등락률"])
 index_card(c2, "코스닥 지수", kosdaq_idx["지수"], kosdaq_idx["등락률"])
+
+# 투자자별 수급 (Naver 스냅샷, 장마감 기준)
+_sup = ds.get_supply()
+if _sup.get("KOSPI") or _sup.get("KOSDAQ"):
+    st.write("")
+    st.caption(f"🏦 투자자별 순매수 · {_sup.get('기준일', '')} 장마감 기준 · "
+               "🔴 순매수 / 🔵 순매도 (억원)")
+    s1, s2 = st.columns(2)
+    supply_card(s1, "코스피", _sup.get("KOSPI", {}))
+    supply_card(s2, "코스닥", _sup.get("KOSDAQ", {}))
+
 st.write("")
 st.divider()
 
