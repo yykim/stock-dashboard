@@ -152,10 +152,22 @@ def index_card(col, label, value, rate):
 
 
 # ---------- 헤더 ----------
-_title, _refresh = st.columns([1, 1], vertical_alignment="center")
-_title.markdown("## 📈 지수 대비 강세·약세 종목")
-# 제목 옆 새로고침 아이콘: 캐시 비우고 최신 시세 다시 불러옴
-if _refresh.button("🔄", help="데이터 갱신 — 최신 시세 다시 불러오기", key="refresh"):
+# 제목 자체가 새로고침 버튼: 테두리 없는(tertiary) 버튼을 제목처럼 스타일링.
+# 작은 ↻ 표시 + 호버 색변화 + 툴팁으로 '클릭 가능'을 살짝 알림.
+st.markdown(
+    "<style>"
+    ".st-key-title_refresh button{padding:0!important;border:none!important;"
+    "background:transparent!important;box-shadow:none!important;}"
+    ".st-key-title_refresh button p{font-size:1.85rem!important;font-weight:700!important;"
+    "color:#F1F5F9!important;margin:0!important;transition:color .15s;}"
+    ".st-key-title_refresh button p::after{content:' ↻';font-size:1.15rem;color:#64748B;}"
+    ".st-key-title_refresh button:hover p,"
+    ".st-key-title_refresh button:hover p::after{color:#818CF8!important;}"
+    "</style>",
+    unsafe_allow_html=True,
+)
+if st.button("📈 지수 대비 강세·약세 종목", type="tertiary", key="title_refresh",
+             help="클릭하면 최신 시세로 새로고침해요"):
     st.cache_data.clear()
     st.rerun()
 
